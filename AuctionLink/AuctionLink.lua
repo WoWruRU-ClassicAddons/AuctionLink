@@ -2,8 +2,8 @@
 	---			Declerations			---
 ---------------------------------
 
-local L = AceLibrary("AceLocale-2.2"):new("AuctionLink")
 AuctionLink = AceLibrary("AceAddon-2.0"):new("AceConsole-2.0", "AceDB-2.0", "AceHook-2.1", "AceEvent-2.0")
+local L = AceLibrary("AceLocale-2.0"):new("AuctionLink")
 
 ---------------------------------
 	---			Main Functions		---
@@ -15,8 +15,8 @@ function AuctionLink:OnInitialize()
 		type = "group",
 		args = {
 			autosearch = {
-				name = "autosearch", type = "toggle",
-				desc = "Automatically search after clicking an item",
+				name = L"autosearch", type = "toggle",
+				desc = L"Automatically search after clicking an item",
 				get = function() return self.db.profile.autosearch end,
 				set = function(v) self.db.profile.autosearch = v end,
 				order = 1
@@ -92,6 +92,9 @@ function AuctionLink:OnEnable()
 	end
 	if(IsAddOnLoaded("AllInOneInventory")) then
 		self:Hook("AllInOneInventoryFrameItemButton_OnClick", "AIOI")
+	end
+    if(IsAddOnLoaded("EngInventory")) then
+		self:Hook("EngInventory_ItemButton_OnClick", "EngInventory")
 	end
 	self:RegisterEvent("ADDON_LOADED", "AddonLoaded")
 end
@@ -264,6 +267,36 @@ function AuctionLink:Bagnon(mouseButton, ignoreModifiers)
 		self.hooks.BagnonItem_OnClick(mouseButton, ignoreModifiers)
 	end
 end
+
+function AuctionLink:EngInventory(mouseButton, ignoreModifiers)
+    local bar, position, bagnum, slotnum;
+
+    if (EngInventory_buttons[this:GetName()] ~= nil) then
+        bar = EngInventory_buttons[this:GetName()]["bar"];
+        position = EngInventory_buttons[this:GetName()]["position"];
+
+        bagnum = EngInventory_bar_positions[bar][position]["bagnum"];
+        slotnum = EngInventory_bar_positions[bar][position]["slotnum"];
+    end
+        
+	if ( AuctionFrameBrowse:IsVisible() and IsShiftKeyDown() and not ChatFrameEditBox:IsVisible()) then
+		local link = GetContainerItemLink(bagnum, slotnum)
+
+		local name = string.gsub(link,"^.-%[(.*)%].*", "%1")
+		if(IsAltKeyDown()) then
+			name = string.gsub(name, " of.-$", "") 
+		end
+		if(self.db.profile.autosearch) then
+			QueryAuctionItems(name)
+			BrowseName:SetText(name)
+		else
+			BrowseName:SetText(name)
+		end
+	else
+		self.hooks.EngInventory_ItemButton_OnClick(mouseButton, ignoreModifiers)
+	end
+end
+
 --New function for bags
 function AuctionLink:ItemButton(button, index)
 	if ( AuctionFrameBrowse:IsVisible() and IsShiftKeyDown() and not ChatFrameEditBox:IsVisible()) then
